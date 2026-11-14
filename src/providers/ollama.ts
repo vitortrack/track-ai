@@ -196,6 +196,10 @@ export class OllamaProvider implements Provider {
     if (!res.ok) {
       const detail = await res.text();
       if (res.status === 404) throw new Error(`Modelo "${this.model}" não encontrado no Ollama. Baixe com "ollama pull ${this.model}".`);
+      if (res.status === 429) {
+        const reason = /"error"\s*:\s*"([^"]*)"/.exec(detail)?.[1] ?? detail;
+        throw new Error(`Limite de uso do Ollama atingido para "${this.model}" (${reason}). Aguarde o limite renovar, adicione créditos em https://ollama.com/settings ou escolha outro modelo.`);
+      }
       throw new Error(`Ollama respondeu ${res.status}: ${detail}`);
     }
     return res;

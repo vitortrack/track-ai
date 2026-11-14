@@ -191,3 +191,17 @@ test('each streamed tool call is announced as it arrives, with the same id the s
   assert.deepEqual(announced.map((c) => c.input.path), ['a.ts', 'b.ts']);
   assert.deepEqual(r.toolCalls.map((c) => c.id), announced.map((c) => c.id));
 });
+
+test('a 429 from Ollama becomes a usage-limit message with what to do, not the raw JSON', async () => {
+  globalThis.fetch = (async (url: string) => {
+    if (url.endsWith('/api/show')) return new Response(JSON.stringify({ capabilities: ['completion'] }));
+    return new Response(JSON.stringify({ error: 'you have reached your monthly usage limit' }), { status: 429 });
+  }) as typeof fetch;
+  const provider = new OllamaProvider('glm:cloud', 1000);
+  provider.addUser('task');
+  const req: StepRequest = { system: 's', tools: [], signal: new AbortController().signal, onText: () => {}, onThinking: () => {} };
+  await assert.rejects(provider.step(req), (e: Error) => {
+    assert.equal(e.message, 'Limite de uso do Ollama atingido para "glm:cloud" (you have reached your monthly usage limit). Aguarde o limite renovar, adicione créditos em https://ollama.com/settings ou escolha outro modelo.');
+    return true;
+  });
+});
