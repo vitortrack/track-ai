@@ -10,7 +10,6 @@ import { AnthropicProvider, type Effort } from './providers/anthropic.js';
 import { alienHome } from './paths.js';
 import { OllamaProvider } from './providers/ollama.js';
 import { CodeIndex, Embedder } from './rag.js';
-import { runSdk, type SdkResult, type SdkRun } from './sdk-engine.js';
 import { workspaceDiff } from './scope.js';
 import { newSessionId, SessionStore, type SavedSession, type Turn } from './sessions.js';
 import { allowsTestEdits, clip, type Mode, type PlanItem, type ToolContext } from './tools.js';
@@ -18,7 +17,6 @@ import type { Provider, Usage, Image } from './types.js';
 import type { AgentUI } from './agent-ui.js';
 
 export type ProviderName = 'ollama' | 'anthropic';
-export type Engine = 'alien' | 'sdk';
 
 export const DEFAULT_MODEL: Record<ProviderName, string> = {
   ollama: 'glm-5.3-flash:cloud',
@@ -46,7 +44,6 @@ export interface Config {
   handoff?: string;
   harness?: string;
   gate?: Criterion[];
-  engine?: Engine;
 }
 
 const PRICE_PER_MTOK: Record<string, [number, number]> = {
@@ -92,8 +89,6 @@ export class Session {
   reviewing: Promise<void> = Promise.resolve();
   private queued: string[] = [];
   private injected: string[] = [];
-  private sdkSession: string | undefined;
-  private sdkTotals: Usage = { input: 0, output: 0 };
 
   constructor(
     readonly cfg: Config,
@@ -176,30 +171,10 @@ export class Session {
     fs.appendFileSync(this.logFile, `${JSON.stringify({ at: new Date().toISOString(), ...entry })}\n`);
   }
 
-  async viaSdk(task: string, ui: AgentUI, extra: Pick<SdkRun, 'resume' | 'tools' | 'outputSchema'> & { role?: Role } = {}): Promise<SdkResult> {
-    const { role, ...rest } = extra;
-    const readOnly = role === 'explorer' || role === 'critic';
-    const run: SdkRun = {
-      root: this.cfg.root,
-      provider: this.cfg.provider,
-      model: this.cfg.model,
-      mode: readOnly ? 'read-only' : this.cfg.mode,
-      lang: this.cfg.lang,
-      maxSteps: this.cfg.maxSteps,
-      allowed: this.allowed,
-      signal: this.signal,
-      ...rest,
-    };
-    const result = await runSdk(task, run, ui);
-    const base = rest.resume ? this.sdkTotals : { input: 0, output: 0 };
-    this.addUsage({ input: Math.max(0, result.usage.input - base.input), output: Math.max(0, result.usage.output - base.output) });
-    return result;
-  }
-
   async spawn(role: Role, task: string, parent: AgentUI = this.ui, model?: string): Promise<string> {
     const ui = parent.child(`${role}#${++this.spawned}`);
     ui.info(`início: ${clip(task.replace(/\s+/g, ' '), 140)}`);
-    const report = this.cfg.engine === 'sdk' ? (await this.viaSdk(task, ui, { role })).answer : await new Agent(this, role, ui, model).run(task);
+    const report = await new Agent(this, role, ui, model).run(task);
     ui.info(`fim: ${clip(report.replace(/\s+/g, ' '), 240)}`);
     return report;
   }
@@ -241,14 +216,7 @@ export class Session {
   run(task: string, images: Image[] = []): Promise<string> {
     return this.track(async () => {
       this.injected = [];
-      let answer: string;
-      if (this.cfg.engine === 'sdk') {
-        if (images.length) this.ui.warn('o motor Agent SDK ainda não recebe imagens anexadas; seguindo só com o texto');
-        const result = await this.viaSdk(task, this.ui, this.sdkSession ? { resume: this.sdkSession } : {});
-        this.sdkSession = result.sessionId;
-        this.sdkTotals = result.usage;
-        answer = result.answer;
-      } else answer = await this.main.run(task, images);
+      const answer = await this.main.run(task, images);
       this.turns.push({ task: [task, ...this.injected].join('\n\n'), answer });
       this.save();
       return answer;
@@ -310,8 +278,6 @@ export class Session {
 
   reset(): void {
     this.main = new Agent(this, 'main', this.ui);
-    this.sdkSession = undefined;
-    this.sdkTotals = { input: 0, output: 0 };
     this.plan = [];
     this.allowed.clear();
     this.id = newSessionId();

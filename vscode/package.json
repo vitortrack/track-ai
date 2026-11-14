@@ -2,7 +2,7 @@
   "name": "alien",
   "displayName": "Alien — Agente de Código",
   "description": "Agente de código autônomo em formato de chat: ReAct, planejamento, revisão independente, multiagente, RAG e memória — local com Ollama ou com Claude.",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "publisher": "vitortrack",
   "license": "MIT",
   "repository": {
@@ -92,19 +92,6 @@
           ],
           "description": "Permissões do agente."
         },
-        "alien.engine": {
-          "type": "string",
-          "enum": [
-            "alien",
-            "sdk"
-          ],
-          "default": "alien",
-          "enumDescriptions": [
-            "Laço próprio do Alien (ferramentas, poda e compactação do Alien)",
-            "Claude Agent SDK (ferramentas, compactação, subagentes, skills e CLAUDE.md do projeto), rodando com o modelo escolhido — Ollama ou Claude"
-          ],
-          "description": "Motor do agente."
-        },
         "alien.lang": {
           "type": "string",
           "default": "pt-BR",
@@ -145,8 +132,7 @@
     "package": "vsce package --target linux-x64 --baseImagesUrl https://github.com/vitortrack/alien/raw/HEAD/vscode"
   },
   "dependencies": {
-    "esbuild": "0.28.2",
-    "@anthropic-ai/claude-agent-sdk": "0.3.323"
+    "esbuild": "0.28.2"
   },
   "devDependencies": {
     "@types/vscode": "^1.90.0",

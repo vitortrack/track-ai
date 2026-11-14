@@ -512,7 +512,7 @@ test('on a follow-up like "pode continuar", the reviewer and the requirements ch
   assert.match(goals[0]!, /escreva a = 2 em src\/a\.js/);
 });
 
-test('with reviewModel set, the review runs in the Alien engine as a critic on that model, without the Agent SDK', async () => {
+test('with reviewModel set, the review runs in the Alien engine as a critic on that model', async () => {
   const root = workspace();
   const main = new ScriptedProvider([() => call('write_file', { path: 'a.txt', content: 'v2' }), () => answer('feito'), () => answer('feito')]);
   const asked: (string | undefined)[] = [];
@@ -525,7 +525,6 @@ test('with reviewModel set, the review runs in the Alien engine as a critic on t
     asked.push(model);
     return model ? critic : main;
   });
-  session.viaSdk = async () => assert.fail('the review must not use the Agent SDK');
   try {
     assert.equal(await session.run('escreva v2 em a.txt'), 'feito');
   } finally {

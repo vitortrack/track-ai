@@ -26,7 +26,7 @@ O mesmo núcleo roda no CLI e na extensão do VS Code, então os requisitos são
   - **Ou Claude**, com `ANTHROPIC_API_KEY` no ambiente. Na extensão, a variável precisa existir no ambiente em que o VS Code foi aberto.
 - **Linux ou macOS, com `bash`, `git`, `grep` e `find` no PATH** (os dois já trazem). No **Windows**, o Alien roda dentro do WSL: veja o [Guia passo a passo](#guia-passo-a-passo-vs-code).
 
-Por padrão o agente roda no laço próprio do Alien (`--engine alien`, ou `alien.engine` na extensão), com o modelo configurado — Ollama ou Claude (este pela API, com `ANTHROPIC_API_KEY`); `--engine sdk` usa o Claude Agent SDK como alternativa. O modo multiagente (`--orchestrate`), as checagens de pronto (`--gate`) e a reescrita de harness (`src/rhi.ts`) usam esse mesmo modelo, por meio de um agente só de leitura que devolve as decisões em JSON validado.
+O agente roda no laço próprio do Alien, com o modelo configurado — Ollama ou Claude (este pela API, com `ANTHROPIC_API_KEY`). O modo multiagente (`--orchestrate`), as checagens de pronto (`--gate`) e a reescrita de harness (`src/rhi.ts`) usam esse mesmo modelo, por meio de um agente só de leitura que devolve as decisões em JSON validado.
 
 **Opcional, por recurso**
 
@@ -171,7 +171,7 @@ alien -p anthropic --effort xhigh "investigue o vazamento de memória"
 | `--harness <arquivo>` | texto de harness específico da tarefa (RHI), posto antes do pedido |
 | `--handoff <arquivo>` | lê a nota da execução anterior no início e grava a nota desta no fim |
 | `--attempts <n>` | melhor de N: tentativas isoladas, fica a que passa nos testes com o menor diff |
-| `--review-model <modelo>` | a revisão roda noutro modelo (ex.: um modelo maior do Ollama), como agente crítico do próprio motor Alien, só leitura, e já liga a revisão; a tarefa continua no modelo principal. Modelos `claude-*` usam o provedor Anthropic do Alien (exige `ANTHROPIC_API_KEY`), sem Agent SDK. Também `ALIEN_REVIEW_MODEL` e, na extensão, `alien.reviewModel` |
+| `--review-model <modelo>` | a revisão roda noutro modelo (ex.: um modelo maior do Ollama), como agente crítico do próprio motor Alien, só leitura, e já liga a revisão; a tarefa continua no modelo principal. Modelos `claude-*` usam o provedor Anthropic do Alien (exige `ANTHROPIC_API_KEY`). Também `ALIEN_REVIEW_MODEL` e, na extensão, `alien.reviewModel` |
 | `--review` | liga a revisão por um agente crítico (padrão: desligada; medido: mesmo acerto e 19–38% menos tokens sem ela, com a checagem de escopo e o portão de verificação sempre ativos) |
 | `--max-steps <n>` | limite de passos por agente (padrão 80) |
 | `--budget <tokens>` | para quando o consumo total passar do limite |

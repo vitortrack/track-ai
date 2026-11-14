@@ -55,14 +55,6 @@ export function agentJudge(session: Session): Judge {
     costUsd: 0,
     async ask<T>(prompt: string, schema: object, tools: string[]): Promise<T> {
       const before = session.costUsd() ?? 0;
-      if (session.cfg.engine === 'sdk') {
-        const role = tools.some((t) => t.startsWith('Bash')) ? 'critic' : 'explorer';
-        const r = await session.viaSdk(prompt, session.ui.child('decisão'), { role, tools, outputSchema: schema });
-        const error = r.structured === undefined ? `sem saída estruturada (${r.answer.slice(0, 200)})` : schemaError(r.structured, schema as Schema);
-        if (error) throw new Error(`motor de decisão não devolveu um JSON válido: ${error}`);
-        judge.costUsd += (session.costUsd() ?? 0) - before;
-        return r.structured as T;
-      }
       let provider: ReturnType<Session['newProvider']> | null = null;
       const reply = async (message: string): Promise<string> => {
         provider ??= session.newProvider();
